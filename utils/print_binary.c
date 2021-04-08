@@ -1,4 +1,4 @@
-#include "ft_ssl.h"
+#include "../ft_ssl.h"
 
 static int pow(int b, int e)
 {
