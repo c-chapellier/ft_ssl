@@ -6,7 +6,7 @@ int hub(int argc, char *argv[], int n, algorithm_t algorithms[n])
     {
         if (strcmp(argv[0], algorithms[i].name) == 0)
         {
-            return (algorithms[i].algorithm(argc - 1, &argv[1]));
+            return (algorithm_cli(argc - 1, &argv[1], algorithms[i]));
         }
     }
 
@@ -25,9 +25,14 @@ int hub(int argc, char *argv[], int n, algorithm_t algorithms[n])
 void fill_algorithms(int n, algorithm_t algorithms[n])
 {
     algorithms[0].name = "md5";
-    algorithms[0].algorithm = &md5;
+    algorithms[0].uppercase_name = "MD5";
+    algorithms[0].hash = &md5;
+    algorithms[0].digest_size_in_bytes = 16;
+
     algorithms[1].name = "sha256";
-    algorithms[1].algorithm = &sha256;
+    algorithms[1].uppercase_name = "SHA256";
+    algorithms[1].hash = &sha256;
+    algorithms[1].digest_size_in_bytes = 32;
 }
 
 int main(int argc, char *argv[])

@@ -1,126 +1,124 @@
 #include "ft_ssl.h"
 
-static void fill_args_d(int n, args_t args[n])
+// // All variables are unsigned 32 bit and wrap modulo 2^32 when calculating
+
+// // s specifies the per-round shift amounts
+uint32_t s[64] = {
+    7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,  7, 12, 17, 22,
+    5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,  5,  9, 14, 20,
+    4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,  4, 11, 16, 23,
+    6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21,  6, 10, 15, 21
+};
+
+// // Use binary integer part of the sines of integers (Radians) as constants:
+// for i from 0 to 63 do
+//     K[i] = floor(232 × abs (sin(i + 1)))
+// end for
+// (Or just use the following precomputed table):
+
+uint32_t K[64] = {
+    0xd76aa478, 0xe8c7b756, 0x242070db, 0xc1bdceee,
+    0xf57c0faf, 0x4787c62a, 0xa8304613, 0xfd469501,
+    0x698098d8, 0x8b44f7af, 0xffff5bb1, 0x895cd7be,
+    0x6b901122, 0xfd987193, 0xa679438e, 0x49b40821,
+    0xf61e2562, 0xc040b340, 0x265e5a51, 0xe9b6c7aa,
+    0xd62f105d, 0x02441453, 0xd8a1e681, 0xe7d3fbc8,
+    0x21e1cde6, 0xc33707d6, 0xf4d50d87, 0x455a14ed,
+    0xa9e3e905, 0xfcefa3f8, 0x676f02d9, 0x8d2a4c8a,
+    0xfffa3942, 0x8771f681, 0x6d9d6122, 0xfde5380c,
+    0xa4beea44, 0x4bdecfa9, 0xf6bb4b60, 0xbebfbc70,
+    0x289b7ec6, 0xeaa127fa, 0xd4ef3085, 0x04881d05,
+    0xd9d4d039, 0xe6db99e5, 0x1fa27cf8, 0xc4ac5665,
+    0xf4292244, 0x432aff97, 0xab9423a7, 0xfc93a039,
+    0x655b59c3, 0x8f0ccc92, 0xffeff47d, 0x85845dd1,
+    0x6fa87e4f, 0xfe2ce6e0, 0xa3014314, 0x4e0811a1,
+    0xf7537e82, 0xbd3af235, 0x2ad7d2bb, 0xeb86d391
+};
+
+uint32_t a0, b0, c0, d0;
+
+static void preprocess(uint8_t message[], uint8_t chunks[])
 {
-    args[0].name = "-p";
-    args[0].value = ARG_P;
-    args[1].name = "-q";
-    args[1].value = ARG_Q;
-    args[2].name = "-r";
-    args[2].value = ARG_R;
-    args[3].name = "-s";
-    args[3].value = ARG_S;
+    int     len8 = strlen((char *)message);
+    int     n = (len8 / 64) + 1;                // # chunks of 512 bits
+
+    // set all zeros
+    memset(chunks, 0, n * 64);
+    
+    // copy message
+    memcpy(chunks, message, len8);
+
+    // append 1
+    chunks[len8] = 1 << 7;
+
+    // append size of message
+    unsigned long long size = len8 * 8;         // must be 64 bits
+    memcpy(&chunks[(n * 64) - 8], &size, sizeof size);
 }
 
-static int fill_args(char *argv[], uint8_t *message[], int *first_filename)
+static void hash_chunk(uint8_t chunk[])
 {
-    int     n = 4;
-    args_t  args_d[n];
-    uint8_t args = 0;
+    uint32_t A = a0;
+    uint32_t B = b0;
+    uint32_t C = c0;
+    uint32_t D = d0;
 
-    *first_filename = 0;
-    fill_args_d(n, args_d);
-    for (int i = 0; argv[i] != NULL; ++i)
+    for (int i = 0; i < 64; ++i)
     {
-        for (int j = 0; j < n; ++j)
+        uint32_t F, g;
+        if (i < 16)
         {
-            if (strcmp(argv[i], args_d[j].name) == 0)
-            {
-                *first_filename = i + 1;
-                args |= args_d[j].value;
-                if (args_d[j].value == ARG_S)
-                {
-                    *message = (uint8_t *)argv[i + 1];
-                }
-            }
+            F = (B & C) | ((~B) & D);
+            g = i;
         }
-    }
-    return (args);
-}
-
-static int md5_hash_from_string(uint8_t message[], uint8_t args)
-{
-    uint8_t digest[16]; 
-    
-    if (message == NULL)
-    {
-        printf("md5: option requires an argument -- s\n");
-        printf("usage: md5 [-pqr] [-s string] [files ...]\n");
-        return (EXIT_FAILURE);
-    }
-    md5_hash(message, digest);
-
-    if ((args & ARG_Q) == 0 && (args & ARG_R) == 0)
-        printf("MD5 (\"%s\") = ", (char *)message);
-    for (int i = 0; i < 16; ++i)
-        printf("%02x", digest[i]);
-    if ((args & ARG_Q) == 0 && args & ARG_R)
-        printf(" \"%s\"", (char *)message);
-    printf("\n");
-    return (EXIT_SUCCESS);
-}
-
-static int md5_hash_from_stdin()
-{
-    uint8_t message[256];
-    uint8_t digest[16]; 
-    
-    read_fd(STDIN_FILENO, 256, (char *)message);
-    md5_hash(message, digest);
-
-    printf("\n");
-    for (int i = 0; i < 16; ++i)
-        printf("%02x", digest[i]);
-    printf("\n");
-    return (EXIT_SUCCESS);
-}
-
-static int md5_hash_from_files(char *filenames[], uint8_t args)
-{
-    int     failure = 0;
-    uint8_t *message;
-    uint8_t digest[16]; 
-    
-    for (int i = 0; filenames[i] != NULL; ++i)
-    {
-        message = ((uint8_t *)read_file(filenames[i]));
-        if (message == NULL)
+        else if (i < 32)
         {
-            failure = 1;
-            continue ;
+            F = (D & B) | ((~D) & C);
+            g = ((5 * i) + 1) % 16;
         }
-        md5_hash(message, digest);
-
-        if ((args & ARG_Q) == 0 && (args & ARG_R) == 0)
-            printf("MD5 (%s) = ", filenames[i]);
-        for (int i = 0; i < 16; ++i)
-            printf("%02x", digest[i]);
-        if ((args & ARG_Q) == 0 && args & ARG_R)
-            printf(" %s", filenames[i]);
-        printf("\n");
+        else if (i < 48)
+        {
+            F = B ^ C ^ D;
+            g = ((3 * i) + 5) % 16;
+        }
+        else
+        {
+            F = C ^ (B | (~D));
+            g = (7 * i) % 16;
+        }
+        g *= 4;                                 // because chunk is a uint8_t array and the algo is for uint32_t
+        F = F + A + K[i] + (chunk[g + 3] << 24) + (chunk[g + 2] << 16) + (chunk[g + 1] << 8) + chunk[g];
+        A = D;
+        D = C;
+        C = B;
+        B += (F << s[i]) | (F >> (32 - s[i]));
     }
-    return (failure ? EXIT_FAILURE : EXIT_SUCCESS);
+    a0 += A;
+    b0 += B;
+    c0 += C;
+    d0 += D;
 }
 
-int md5(int argc, char *argv[])
-{
-    uint8_t args;
-    uint8_t *message = NULL;
-    int     first_filename;
+void        md5(uint8_t message[], uint8_t digest[16])
+{    
+    int     len8 = strlen((char *)message);
+    int     n = (len8 / 64) + 1;                // # chunks of 512 bits
+    uint8_t chunks[n * 64];
 
-    args = fill_args(argv, &message, &first_filename);
+    preprocess(message, chunks);
 
-    if (args & ARG_S)
+    a0 = 0x67452301;
+    b0 = 0xefcdab89;
+    c0 = 0x98badcfe;
+    d0 = 0x10325476;
+    for (int i = 0; i < n; ++i)
     {
-        if (md5_hash_from_string(message, args) == EXIT_FAILURE)
-            return (EXIT_FAILURE);
+        hash_chunk(&chunks[i * 64]);
     }
-    else if (argc == 0)
-        md5_hash_from_stdin();
-    else
-    {
-        if (md5_hash_from_files(&argv[first_filename], args) == EXIT_FAILURE)
-            return (EXIT_FAILURE);
-    }
-    return (EXIT_SUCCESS);
+
+    // (Output is in little-endian)
+    memcpy(&digest[0], &a0, sizeof a0);
+    memcpy(&digest[4], &b0, sizeof b0);
+    memcpy(&digest[8], &c0, sizeof c0);
+    memcpy(&digest[12], &d0, sizeof d0);
 }

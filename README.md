@@ -8,9 +8,13 @@ Used functions
 - close
 - read
 - write
+- lseek
 - malloc
 - free
 - printf
+- strcmp
+- strlen
+- mmap
 
 md5
 - -p, echo STDIN to STDOUT and append the checksum to STDOUT
