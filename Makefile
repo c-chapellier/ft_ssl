@@ -1,9 +1,8 @@
 SRCS =	main.c \
-		algorithm_cli.c \
-		md5.c \
-		sha256.c \
+		hashes/md5.c \
+		hashes/sha256.c \
 		utils/print_uint.c \
-		utils/read_file.c \
+		utils/io.c \
 		utils/binary_operations.c
 
 OBJS = ${SRCS:.c=.o}
