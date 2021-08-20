@@ -30,7 +30,7 @@ char *read_fd(int fd)
     return content;
 }
 
-char    *read_file(const char *filename)
+char *read_file(const char *filename)
 {
     struct stat path_stat;
     char    *content;
@@ -52,4 +52,27 @@ char    *read_file(const char *filename)
     content = read_fd(fd);
     close(fd);
     return content;
+}
+
+int write_file(const char *filename, const char *content)
+{
+    struct stat path_stat;
+    int     fd;
+
+    stat(filename, &path_stat);
+    if (S_ISDIR(path_stat.st_mode))
+    {
+        printf("md5: %s: Is a directory\n", filename);
+        return 1;
+    }
+    
+    fd = open(filename, O_CREAT | O_WRONLY | O_TRUNC, 0666);
+    if (fd == -1)
+    {
+        printf("%s: No such file or directory\n", filename);
+        return 1;
+    }
+    write(fd, content, strlen(content));
+    close(fd);
+    return 0;
 }

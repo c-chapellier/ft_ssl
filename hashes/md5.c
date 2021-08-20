@@ -92,7 +92,7 @@ int md5(int argc, char *argv[])
     }
 
     if (sflag)
-        return hash_args();
+        hash_args();
     return hash_files(&argv[optind]);
 }
 

@@ -1,6 +1,7 @@
 SRCS =	main.c \
 		hashes/md5.c \
 		hashes/sha256.c \
+		ciphers/base64.c \
 		utils/print_uint.c \
 		utils/io.c \
 		utils/binary_operations.c
@@ -15,6 +16,9 @@ all :		${NAME}
 
 ${NAME} :	${OBJS}
 			gcc -o ${NAME} ${OBJS}
+
+test :		${NAME}
+			bash test.sh
 
 clean :
 			rm -f ${OBJS}
