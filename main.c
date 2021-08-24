@@ -7,20 +7,19 @@ char *hashes[] = {
 
 char *ciphers[] = {
     "base64",
-    // "des",
+    "des",
     "des-ecb",
-    // "des-cbc",
+    "des-cbc",
 };
 
 int (*mains[])(int argc, char *argv[]) = {
     &md5,
     &sha256,
     &base64,
-    // &des_cbc,
+    &des,
     &des_ecb,
-    // &des_cbc,
+    &des,
 };
-
 
 int main(int argc, char *argv[])
 {
@@ -34,12 +33,8 @@ int main(int argc, char *argv[])
     int n_ciphers = sizeof ciphers / sizeof ciphers[0];
 
     for (int i = 0; i < n_hashes + n_ciphers; ++i)
-    {
         if (strcmp(argv[1], i < n_hashes ? hashes[i] : ciphers[i - n_hashes]) == 0)
-        {
             return mains[i](argc - 1, &argv[1]);
-        }
-    }
 
     printf("ft_ssl: Error: '%s' is an invalid command.\n\n", argv[1]);
     printf("Standard commands:\n\n");

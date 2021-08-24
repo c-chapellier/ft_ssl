@@ -27,6 +27,10 @@ void md5_hash(char *msg, uint8_t digest[MD5_DIGEST_SIZE]);
 int sha256(int argc, char *argv[]);
 
 int base64(int argc, char *argv[]);
+void base64_encrypt(char *msg, char *e);
+void base64_decrypt(char *msg, char *e);
+
+int des(int argc, char *argv[]);
 int des_ecb(int argc, char *argv[]);
 
 uint32_t right_rotate_32(uint32_t value, unsigned int count);

@@ -1,6 +1,5 @@
 #include "../ft_ssl.h"
 
-// indexes begin at 1
 static int key_permutation_table[56] = {
     57, 49, 41, 33, 25, 17,  9,
      1, 58, 50, 42, 34, 26, 18,
@@ -12,7 +11,6 @@ static int key_permutation_table[56] = {
     21, 13,  5, 28, 20, 12,  4
 };
 
-// indexes begin at 1
 static int key_permutation_table2[48] = {
     14, 17, 11, 24,  1,  5,
      3, 28, 15,  6, 21, 10,
@@ -24,7 +22,7 @@ static int key_permutation_table2[48] = {
     46, 42, 50, 36, 29, 32
 };
 
-static int circular_rotate_table[16] = {
+static int circular_rotate_permutation_table[16] = {
     1, 1, 2, 2,
     2, 2, 2, 2,
     1, 2, 2, 2,
@@ -42,7 +40,7 @@ static int initial_block_permutation_table[64] = {
     63, 55, 47, 39, 31, 23, 15, 7
 };
 
-static int e_table[64] = {
+static int e_permutation_table[64] = {
     32,  1,  2,  3,  4,  5,
      4,  5,  6,  7,  8,  9,
      8,  9, 10, 11, 12, 13,
@@ -53,7 +51,7 @@ static int e_table[64] = {
     28, 29, 30, 31, 32,  1
 };
 
-static int block_final_permutation_table[64] = {
+static int final_block_permutation_table[64] = {
     40, 8, 48, 16, 56, 24, 64, 32,
     39, 7, 47, 15, 55, 23, 63, 31,
     38, 6, 46, 14, 54, 22, 62, 30,
@@ -63,7 +61,6 @@ static int block_final_permutation_table[64] = {
     34, 2, 42, 10, 50, 18, 58, 26,
     33, 1, 41,  9, 49, 17, 57, 25
 };
-
 
 static int s_box_permutation_table[32] = {
     16,   7,  20,  21,
@@ -127,17 +124,25 @@ static int s_box_table[8][4][16] = {
     }
 };
 
+static int is_cbc = 1;
+static uint64_t initialisation_vector = 0;
 static int aflag = 0, dflag = 0, eflag = 1, iflag = 0, kflag = 0;
 static int oflag = 0, pflag = 0, sflag = 0, vflag = 0;
 static char *ivalue = NULL, *kvalue = NULL, *ovalue = NULL;
 static char *pvalue = NULL, *svalue = NULL, *vvalue = NULL;
 
-static void des_ecb_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t e[n]);
+static void des_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t e[n]);
 static void permute(int n, uint8_t block[n], int m, uint8_t permutated_block[m], int permutation_table[m]);
 static void rotate_key(uint8_t key[7], int n);
 static uint32_t s_box(uint8_t block[6]);
 
 int des_ecb(int argc, char *argv[])
+{
+    is_cbc = 0;
+    return des(argc, argv);
+}
+
+int des(int argc, char *argv[])
 {
     int c;
 
@@ -200,17 +205,51 @@ int des_ecb(int argc, char *argv[])
         }
     }
 
-    // char *msg = read_fd(STDIN_FILENO);
+    // assert(!is_cbc || vflag);
+
+    // char *msg = iflag ? read_file(ivalue) : read_fd(STDIN_FILENO);
     char msg[8] = { 1, 35, 69, 103, 137, 171, 205, 239 };
+
+    // uint8_t *key = kflag ? kvalue : generate_key();
     uint8_t key[8] = { 19, 52, 87, 121, 155, 188, 223, 241 };
+
+    // char *password = pflag ? pvalue : NULL;
+
+    // char *salt = sflag ? svalue : NULL;
+
+    // if (vflag)
+    //     initialisation_vector = strtol(vvalue, NULL, 16);
+
     uint8_t e[8] = {0};
 
-    des_ecb_algorithm(8, msg, key, e);
+    // if (aflag && !dflag)
+    //     base64_encrypt(msg, msg);
+
+    des_algorithm(8, msg, key, e);
+
+    // if (aflag && dflag)
+    //     base64_decrypt(e, e);
+
+    // if (oflag)
+    //     write_file(ovalue, e);
+
+    for (int i = 0; i < 1; printf("\n"), ++i)
+        for (int j = 0; j < 8; ++j)
+            printf("%.2x", e[8*i + j]);
+
+    uint8_t e2[8] = {0};
+
+    dflag = 1;
+    des_algorithm(8, (char *)e, key, e2);
+
+    for (int i = 0; i < 1; printf("\n"), ++i)
+        for (int j = 0; j < 8; ++j)
+            printf("%.2x", e2[8*i + j]);
 
     return 0;
 }
 
-static void des_ecb_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t e[n])
+static void des_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t e[n])
 {
     assert(n % 8 == 0);
 
@@ -218,12 +257,13 @@ static void des_ecb_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t 
     uint8_t final_keys[16][6] = {0};
     uint8_t s_box_input[6];
     uint32_t left[17], right[17], s_box_output;
+    uint32_t *xored;
 
     permute(8, key, 7, rotated_keys[0], key_permutation_table);
     for (int i = 0; i < 16; ++i)
     {
-        i != 0 && memcpy(rotated_keys[i], rotated_keys[i - 1], 7);
-        rotate_key(rotated_keys[i], circular_rotate_table[i]);
+        i && memcpy(rotated_keys[i], rotated_keys[i - 1], 7);
+        rotate_key(rotated_keys[i], circular_rotate_permutation_table[i]);
     }
 
     for (int i = 0; i < 16; ++i)
@@ -231,18 +271,22 @@ static void des_ecb_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t 
 
     for (int i = 0; i < n / 8; ++i)
     {
-        permute(8, (uint8_t *)&msg[8 * i], 8, &e[8 * i], initial_block_permutation_table);
+        xored = (uint32_t *)&msg[8 * i];
+        if (is_cbc && !dflag)
+            *xored ^= i ? *((uint32_t *)&e[8 * (i - 1)]) : initialisation_vector;
+        
+        permute(8, (uint8_t *)xored, 8, &e[8 * i], initial_block_permutation_table);
 
         memcpy(&left[0], &e[8 * i], 4);
         memcpy(&right[0], &e[8*i + 4], 4);
         for (int j = 0; j < 16; ++j)
         {
-            j != 0 && memcpy(&left[j], &right[j - 1], 4);
+            j && memcpy(&left[j], &right[j - 1], 4);
 
-            permute(4, (uint8_t *)&right[j], 6, s_box_input, e_table);
+            permute(4, (uint8_t *)&right[j], 6, s_box_input, e_permutation_table);
 
             for (int i = 0; i < 6; ++i)
-                s_box_input[i] ^= final_keys[j][i];
+                s_box_input[i] ^= final_keys[dflag ? 15 - j : j][i];
 
             s_box_output = s_box(s_box_input);
             permute(4, (uint8_t *)&s_box_output, 4, (uint8_t *)&s_box_output, s_box_permutation_table);
@@ -252,11 +296,11 @@ static void des_ecb_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t 
 
         memcpy(&e[8 * i], &right[16], 4);
         memcpy(&e[8*i + 4], &left[16], 4);
-        permute(8, &e[8 * i], 8, &e[8 * i], block_final_permutation_table);
-        
-        for (int j = 0; j < 8; ++j)
-            printf("%.2x", e[8*i + j]);
-        printf("\n");
+        permute(8, &e[8 * i], 8, &e[8 * i], final_block_permutation_table);
+
+        xored = (uint32_t *)&e[8 * i];
+        if (is_cbc && dflag)
+            *xored ^= i ? *((uint32_t *)&msg[8 * (i - 1)]) : initialisation_vector;
     }
 }
 
@@ -317,7 +361,8 @@ static void combine(uint8_t *res, uint8_t working, int table[4][16])
 
 static uint32_t s_box(uint8_t block[6])
 {
-    uint8_t tmp[8];
+    uint32_t res;
+    uint8_t tmp[8], *tmp2 =(uint8_t *)&res;
     uint8_t working;
 
     working = (block[0] >> 2);
@@ -343,9 +388,6 @@ static uint32_t s_box(uint8_t block[6])
 
     working = ((block[5] << 2) >> 2);
     combine(&tmp[7], working, s_box_table[7]);
-
-    uint32_t res;
-    uint8_t *tmp2 =(uint8_t *)&res;
 
     tmp2[0] = (tmp[0] << 4) | tmp[1];
     tmp2[1] = (tmp[2] << 4) | tmp[3];

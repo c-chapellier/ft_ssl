@@ -6,8 +6,8 @@ static char padding = '=';
 static int dflag = 0, eflag = 1, iflag = 0, oflag = 0;
 static char *ivalue = NULL, *ovalue = NULL;
 
-static void base64_encrypt(char *msg, char *e);
-static void base64_decrypt(char *msg, char *e);
+void base64_encrypt(char *msg, char *e);
+void base64_decrypt(char *msg, char *e);
 static char invert_table(char c);
 
 int base64(int argc, char *argv[])
@@ -72,7 +72,7 @@ int base64(int argc, char *argv[])
     return 0;
 }
 
-static void base64_encrypt(char *msg, char *e)
+void base64_encrypt(char *msg, char *e)
 {
     int n = strlen(msg);
 
@@ -90,7 +90,7 @@ static void base64_encrypt(char *msg, char *e)
     e[4*((n-1)/3) + 4] = '\0';
 }
 
-static void base64_decrypt(char *msg, char *e)
+void base64_decrypt(char *msg, char *e)
 {
     int n = strlen(msg);
 
