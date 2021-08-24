@@ -8,6 +8,7 @@ static char *ivalue = NULL, *ovalue = NULL;
 
 static void base64_encrypt(char *msg, char *e);
 static void base64_decrypt(char *msg, char *e);
+static char invert_table(char c);
 
 int base64(int argc, char *argv[])
 {
@@ -89,6 +90,18 @@ static void base64_encrypt(char *msg, char *e)
     e[4*((n-1)/3) + 4] = '\0';
 }
 
+static void base64_decrypt(char *msg, char *e)
+{
+    int n = strlen(msg);
+
+    for (int i = 0; i < n / 4; ++i)
+    {
+        e[3*i] = invert_table(msg[4*i])*4 + invert_table(msg[4*i + 1])/16;
+        e[3*i + 1] = (invert_table(msg[4*i + 1])%16)*16 + invert_table(msg[4*i + 2])/4;
+        e[3*i + 2] = (invert_table(msg[4*i + 2])%4)*64 + invert_table(msg[4*i + 3]);
+    }
+}
+
 static char invert_table(char c)
 {
     if (c == padding)
@@ -100,16 +113,4 @@ static char invert_table(char c)
     }
     printf("Invalid character in input stream.\n");
     exit(1);
-}
-
-static void base64_decrypt(char *msg, char *e)
-{
-    int n = strlen(msg);
-
-    for (int i = 0; i < n / 4; ++i)
-    {
-        e[3*i] = invert_table(msg[4*i])*4 + invert_table(msg[4*i + 1])/16;
-        e[3*i + 1] = (invert_table(msg[4*i + 1])%16)*16 + invert_table(msg[4*i + 2])/4;
-        e[3*i + 2] = (invert_table(msg[4*i + 2])%4)*64 + invert_table(msg[4*i + 3]);
-    }
 }

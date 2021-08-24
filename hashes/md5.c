@@ -1,7 +1,5 @@
 #include "../ft_ssl.h"
 
-#define MD5_DIGEST_SIZE 16
-
 // // All variables are unsigned 32 bit and wrap modulo 2^32 when calculating
 
 // // s specifies the per-round shift amounts
@@ -46,7 +44,7 @@ static int hash_stdin();
 static int hash_empty_string();
 static int hash_args();
 static int hash_files(char *filenames[]);
-static void md5_hash(char *msg, uint8_t digest[16]);
+void md5_hash(char *msg, uint8_t digest[MD5_DIGEST_SIZE]);
 static void preprocess(char *msg, uint8_t chunks[]);
 static void hash_chunk(uint8_t chunk[]);
 
@@ -171,7 +169,7 @@ static int hash_files(char *filenames[])
     return rc;
 }
 
-static void md5_hash(char *msg, uint8_t digest[16])
+void md5_hash(char *msg, uint8_t digest[MD5_DIGEST_SIZE])
 {
     int n_chunks = ((strlen(msg) + 8) / 64) + 1;
     uint8_t chunks[n_chunks * 64];

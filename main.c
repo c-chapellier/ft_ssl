@@ -7,9 +7,9 @@ char *hashes[] = {
 
 char *ciphers[] = {
     "base64",
-    "des",
+    // "des",
     "des-ecb",
-    "des-cbc",
+    // "des-cbc",
 };
 
 int (*mains[])(int argc, char *argv[]) = {
@@ -17,7 +17,7 @@ int (*mains[])(int argc, char *argv[]) = {
     &sha256,
     &base64,
     // &des_cbc,
-    // &des_ecb,
+    &des_ecb,
     // &des_cbc,
 };
 
