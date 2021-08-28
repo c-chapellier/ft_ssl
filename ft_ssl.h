@@ -10,6 +10,7 @@
 #include <sys/stat.h>
 #include <limits.h>
 #include <assert.h>
+#include <errno.h>
 
 #define MD5_DIGEST_SIZE 16
 
@@ -27,8 +28,8 @@ void md5_hash(char *msg, uint8_t digest[MD5_DIGEST_SIZE]);
 int sha256(int argc, char *argv[]);
 
 int base64(int argc, char *argv[]);
-void base64_encrypt(char *msg, char *e);
-void base64_decrypt(char *msg, char *e);
+int base64_encrypt(int n, char msg[n], char e[]);
+int base64_decrypt(char *msg, char *e);
 
 int des(int argc, char *argv[]);
 int des_ecb(int argc, char *argv[]);
@@ -39,8 +40,11 @@ uint32_t big_to_small_endian_32(uint32_t n);
 uint64_t small_to_big_endian_64(uint64_t n);
 
 char *read_file(const char *filename);
+char *read_file_n(const char *filename, int *bytes_read);
 char *read_fd(int fd);
+char *read_fd_n(int fd, int *bytes_read);
 int write_file(const char *filename, const char *content);
+int write_buffer_to_file(const char *filename, int n, const char content[n]);
 
 void print_uint8(uint8_t *n);
 

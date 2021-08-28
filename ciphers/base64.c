@@ -6,14 +6,14 @@ static char padding = '=';
 static int dflag = 0, eflag = 1, iflag = 0, oflag = 0;
 static char *ivalue = NULL, *ovalue = NULL;
 
-void base64_encrypt(char *msg, char *e);
-void base64_decrypt(char *msg, char *e);
+int base64_encrypt(int n, char msg[n], char e[]);
+int base64_decrypt(char *msg, char *e);
 static char invert_table(char c);
 
 int base64(int argc, char *argv[])
 {
     char *msg, *e;
-    int c;
+    int c, n;
 
     opterr = 0;
     while ((c = getopt(argc, argv, "dei:o:")) != EOF)
@@ -46,23 +46,22 @@ int base64(int argc, char *argv[])
         }
     }
 
-    msg = iflag ? read_file(ivalue) : read_fd(STDIN_FILENO);
+    msg = iflag ? read_file_n(ivalue, &n) : read_fd_n(STDIN_FILENO, &n);
 
     if (dflag)
     {
-        msg[strlen(msg) - 1] = '\0';
-        if (strlen(msg) % 4 != 0)
+        if ((n-1) % 4 != 0)
         {
             printf("not valid\n");
             exit(1);
         }
-        e = malloc((strlen(msg)*4 / 3) + 2);
+        e = malloc((n*4 / 3) + 2);
         base64_decrypt(msg, e);
     }
     else
     {
-        e = malloc((strlen(msg)*4 / 3) + 2);
-        base64_encrypt(msg, e);
+        e = malloc((n*4 / 3) + 2);
+        base64_encrypt(n, msg, e);
     }
 
     !dflag && sprintf(e, "%s\n", e);
@@ -72,27 +71,33 @@ int base64(int argc, char *argv[])
     return 0;
 }
 
-void base64_encrypt(char *msg, char *e)
+int base64_encrypt(int n, char msg[n], char e[])
 {
-    int n = strlen(msg);
+    char *overlap_free = malloc((strlen(msg)*4 / 3) + 2);
 
     for (int i = 0; i <= (n-1) / 3; ++i)
     {
-        e[4*i] = table[msg[3*i] / 4];
-        e[4*i + 1] = table[(msg[3*i] % 4)*16 + msg[3*i + 1]/16];
-        e[4*i + 2] = table[(msg[3*i + 1] % 16)*4 + msg[3*i + 2]/64];
-        e[4*i + 3] = table[msg[3*i + 2] % 64];
+        overlap_free[4*i] = table[(uint8_t)msg[3*i] / 4];
+        overlap_free[4*i + 1] = table[((uint8_t)msg[3*i] % 4)*16 + (uint8_t)msg[3*i + 1]/16];
+        overlap_free[4*i + 2] = table[((uint8_t)msg[3*i + 1] % 16)*4 + (uint8_t)msg[3*i + 2]/64];
+        overlap_free[4*i + 3] = table[(uint8_t)msg[3*i + 2] % 64];
     }
+
     if (n % 3 == 1)
-        e[4*((n-1)/3) + 2] = padding;
+        overlap_free[4*((n-1)/3) + 2] = padding;
     if (n % 3 == 1 || n % 3 == 2)
-        e[4*((n-1)/3) + 3] = padding;
-    e[4*((n-1)/3) + 4] = '\0';
+        overlap_free[4*((n-1)/3) + 3] = padding;
+    overlap_free[4*((n-1)/3) + 4] = '\0';
+
+    memcpy(e, overlap_free, 4*((n-1)/3) + 5);
+    return 4*((n-1)/3) + 4;
 }
 
-void base64_decrypt(char *msg, char *e)
+int base64_decrypt(char *msg, char *e)
 {
     int n = strlen(msg);
+
+    // assert(n % 4 == 0);
 
     for (int i = 0; i < n / 4; ++i)
     {
@@ -100,6 +105,7 @@ void base64_decrypt(char *msg, char *e)
         e[3*i + 1] = (invert_table(msg[4*i + 1])%16)*16 + invert_table(msg[4*i + 2])/4;
         e[3*i + 2] = (invert_table(msg[4*i + 2])%4)*64 + invert_table(msg[4*i + 3]);
     }
+    return 3*n / 4;
 }
 
 static char invert_table(char c)

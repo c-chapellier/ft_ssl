@@ -173,3 +173,156 @@ then
 
     rm -f output.mine output.true output2.mine output2.true
 fi
+
+#########################################################
+#                                                       #
+#                        DES                            #
+#                                                       #
+#########################################################
+
+test_des () {
+    
+    if ( diff <($1) <($2) )
+    then
+        echo -e "\033[0;32m[OK]\033[0m $2"
+    else
+        echo -e "\033[0;31m[ERROR]\033[0m $2"
+    fi
+}
+
+test_des_ecb_file_output () {
+
+    ./ft_ssl des-ecb -k $2 -i $1 -o output
+    
+    if ( diff <(cat $1) <(./ft_ssl des-ecb -d -k $2 -i output) )
+    then
+        echo -e "\033[0;32m[OK]\033[0m test_des_ecb_file_output $1 $2"
+    else
+        echo -e "\033[0;31m[ERROR]\033[0m test_des_ecb_file_output $1 $2"
+    fi
+    rm -f output
+}
+
+test_des_ecb_file_output_a () {
+
+    ./ft_ssl des-ecb -a -k $2 -i $1 -o output
+    
+    if ( diff <(cat $1) <(./ft_ssl des-ecb -d -a -k $2 -i output) )
+    then
+        echo -e "\033[0;32m[OK]\033[0m test_des_ecb_file_output_a $1 $2"
+    else
+        echo -e "\033[0;31m[ERROR]\033[0m test_des_ecb_file_output_a $1 $2"
+    fi
+    rm -f output
+}
+
+test_des_cbc_file_output () {
+
+    ./ft_ssl des -v ffffffffffffffff -k $2 -i $1 -o output
+    
+    if ( diff <(cat $1) <(./ft_ssl des -d -v ffffffffffffffff -k $2 -i output) )
+    then
+        echo -e "\033[0;32m[OK]\033[0m test_des_ecb_file_output $1 $2"
+    else
+        echo -e "\033[0;31m[ERROR]\033[0m test_des_ecb_file_output $1 $2"
+    fi
+    rm -f output
+}
+
+test_des_cbc_file_output_a () {
+
+    ./ft_ssl des -a -v ffffffffffffffff -k $2 -i $1 -o output
+    
+    if ( diff <(cat $1) <(./ft_ssl des -d -a -v ffffffffffffffff -k $2 -i output) )
+    then
+        echo -e "\033[0;32m[OK]\033[0m test_des_ecb_file_output_a $1 $2"
+    else
+        echo -e "\033[0;31m[ERROR]\033[0m test_des_ecb_file_output_a $1 $2"
+    fi
+    rm -f output
+}
+
+if [[ $1 == '' || $1 == 'des' ]]
+then
+    test_des './ft_ssl des-ecb -k ffffffffffffffff -i Makefile' 'openssl des-ecb -K ffffffffffffffff -in Makefile'
+    test_des './ft_ssl des-ecb -k ffffffffffffffff -i README.md' 'openssl des-ecb -K ffffffffffffffff -in README.md'
+    test_des './ft_ssl des-ecb -k ffffffffffffffff -i main.c' 'openssl des-ecb -K ffffffffffffffff -in main.c'
+    test_des './ft_ssl des-ecb -k ffffffffffffffff -i ft_ssl.h' 'openssl des-ecb -K ffffffffffffffff -in ft_ssl.h'
+
+    test_des './ft_ssl des-ecb -k 0123456789abcdef -i Makefile' 'openssl des-ecb -K 0123456789abcdef -in Makefile'
+    test_des './ft_ssl des-ecb -k 0123456789abcdef -i README.md' 'openssl des-ecb -K 0123456789abcdef -in README.md'
+    test_des './ft_ssl des-ecb -k 0123456789abcdef -i main.c' 'openssl des-ecb -K 0123456789abcdef -in main.c'
+    test_des './ft_ssl des-ecb -k 0123456789abcdef -i ft_ssl.h' 'openssl des-ecb -K 0123456789abcdef -in ft_ssl.h'
+
+    test_des './ft_ssl des-ecb -a -k ffffffffffffffff -i Makefile' 'openssl des-ecb -a -K ffffffffffffffff -in Makefile'
+    test_des './ft_ssl des-ecb -a -k ffffffffffffffff -i README.md' 'openssl des-ecb -a -K ffffffffffffffff -in README.md'
+    test_des './ft_ssl des-ecb -a -k ffffffffffffffff -i main.c' 'openssl des-ecb -a -K ffffffffffffffff -in main.c'
+    test_des './ft_ssl des-ecb -a -k ffffffffffffffff -i ft_ssl.h' 'openssl des-ecb -a -K ffffffffffffffff -in ft_ssl.h'
+
+    test_des './ft_ssl des-ecb -a -k 0123456789abcdef -i Makefile' 'openssl des-ecb -a -K 0123456789abcdef -in Makefile'
+    test_des './ft_ssl des-ecb -a -k 0123456789abcdef -i README.md' 'openssl des-ecb -a -K 0123456789abcdef -in README.md'
+    test_des './ft_ssl des-ecb -a -k 0123456789abcdef -i main.c' 'openssl des-ecb -a -K 0123456789abcdef -in main.c'
+    test_des './ft_ssl des-ecb -a -k 0123456789abcdef -i ft_ssl.h' 'openssl des-ecb -a -K 0123456789abcdef -in ft_ssl.h'
+
+    test_des_ecb_file_output Makefile ffffffffffffffff
+    test_des_ecb_file_output README.md ffffffffffffffff
+    test_des_ecb_file_output main.c ffffffffffffffff
+    test_des_ecb_file_output ft_ssl.h ffffffffffffffff
+
+    test_des_ecb_file_output Makefile 0123456789abcdef
+    test_des_ecb_file_output README.md 0123456789abcdef
+    test_des_ecb_file_output main.c 0123456789abcdef
+    test_des_ecb_file_output ft_ssl.h 0123456789abcdef
+
+    test_des_ecb_file_output_a Makefile ffffffffffffffff
+    test_des_ecb_file_output_a README.md ffffffffffffffff
+    test_des_ecb_file_output_a main.c ffffffffffffffff
+    test_des_ecb_file_output_a ft_ssl.h ffffffffffffffff
+
+    test_des_ecb_file_output_a Makefile 0123456789abcdef
+    test_des_ecb_file_output_a README.md 0123456789abcdef
+    test_des_ecb_file_output_a main.c 0123456789abcdef
+    test_des_ecb_file_output_a ft_ssl.h 0123456789abcdef
+
+    ###############################          CBC          ###############################
+
+    test_des './ft_ssl des -v ffffffffffffffff -k ffffffffffffffff -i Makefile' 'openssl des -iv ffffffffffffffff -K ffffffffffffffff -in Makefile'
+    test_des './ft_ssl des -v ffffffffffffffff -k ffffffffffffffff -i README.md' 'openssl des -iv ffffffffffffffff -K ffffffffffffffff -in README.md'
+    test_des './ft_ssl des -v ffffffffffffffff -k ffffffffffffffff -i main.c' 'openssl des -iv ffffffffffffffff -K ffffffffffffffff -in main.c'
+    test_des './ft_ssl des -v ffffffffffffffff -k ffffffffffffffff -i ft_ssl.h' 'openssl des -iv ffffffffffffffff -K ffffffffffffffff -in ft_ssl.h'
+    
+    test_des './ft_ssl des -v ffffffffffffffff -k 0123456789abcdef -i Makefile' 'openssl des -iv ffffffffffffffff -K 0123456789abcdef -in Makefile'
+    test_des './ft_ssl des -v ffffffffffffffff -k 0123456789abcdef -i README.md' 'openssl des -iv ffffffffffffffff -K 0123456789abcdef -in README.md'
+    test_des './ft_ssl des -v ffffffffffffffff -k 0123456789abcdef -i main.c' 'openssl des -iv ffffffffffffffff -K 0123456789abcdef -in main.c'
+    test_des './ft_ssl des -v ffffffffffffffff -k 0123456789abcdef -i ft_ssl.h' 'openssl des -iv ffffffffffffffff -K 0123456789abcdef -in ft_ssl.h'
+    
+    test_des './ft_ssl des -v ffffffffffffffff -a -k ffffffffffffffff -i Makefile' 'openssl des -a -iv ffffffffffffffff -K ffffffffffffffff -in Makefile'
+    test_des './ft_ssl des -v ffffffffffffffff -a -k ffffffffffffffff -i README.md' 'openssl des -a -iv ffffffffffffffff -K ffffffffffffffff -in README.md'
+    test_des './ft_ssl des -v ffffffffffffffff -a -k ffffffffffffffff -i main.c' 'openssl des -a -iv ffffffffffffffff -K ffffffffffffffff -in main.c'
+    test_des './ft_ssl des -v ffffffffffffffff -a -k ffffffffffffffff -i ft_ssl.h' 'openssl des -a -iv ffffffffffffffff -K ffffffffffffffff -in ft_ssl.h'
+    
+    test_des './ft_ssl des -v ffffffffffffffff -a -k 0123456789abcdef -i Makefile' 'openssl des -a -iv ffffffffffffffff -K 0123456789abcdef -in Makefile'
+    test_des './ft_ssl des -v ffffffffffffffff -a -k 0123456789abcdef -i README.md' 'openssl des -a -iv ffffffffffffffff -K 0123456789abcdef -in README.md'
+    test_des './ft_ssl des -v ffffffffffffffff -a -k 0123456789abcdef -i main.c' 'openssl des -a -iv ffffffffffffffff -K 0123456789abcdef -in main.c'
+    test_des './ft_ssl des -v ffffffffffffffff -a -k 0123456789abcdef -i ft_ssl.h' 'openssl des -a -iv ffffffffffffffff -K 0123456789abcdef -in ft_ssl.h'
+
+    test_des_cbc_file_output Makefile ffffffffffffffff
+    test_des_cbc_file_output README.md ffffffffffffffff
+    test_des_cbc_file_output main.c ffffffffffffffff
+    test_des_cbc_file_output ft_ssl.h ffffffffffffffff
+
+    test_des_cbc_file_output Makefile 0123456789abcdef
+    test_des_cbc_file_output README.md 0123456789abcdef
+    test_des_cbc_file_output main.c 0123456789abcdef
+    test_des_cbc_file_output ft_ssl.h 0123456789abcdef
+
+    test_des_cbc_file_output_a Makefile ffffffffffffffff
+    test_des_cbc_file_output_a README.md ffffffffffffffff
+    test_des_cbc_file_output_a main.c ffffffffffffffff
+    test_des_cbc_file_output_a ft_ssl.h ffffffffffffffff
+    
+    test_des_cbc_file_output_a Makefile 0123456789abcdef
+    test_des_cbc_file_output_a README.md 0123456789abcdef
+    test_des_cbc_file_output_a main.c 0123456789abcdef
+    test_des_cbc_file_output_a ft_ssl.h 0123456789abcdef
+fi

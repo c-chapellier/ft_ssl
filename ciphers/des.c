@@ -131,7 +131,8 @@ static int oflag = 0, pflag = 0, sflag = 0, vflag = 0;
 static char *ivalue = NULL, *kvalue = NULL, *ovalue = NULL;
 static char *pvalue = NULL, *svalue = NULL, *vvalue = NULL;
 
-static void des_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t e[n]);
+static char *pad_msg(char *msg, int *msglen);
+static void des_algorithm(int n, const char msg[n], uint64_t key, uint8_t e[n]);
 static void permute(int n, uint8_t block[n], int m, uint8_t permutated_block[m], int permutation_table[m]);
 static void rotate_key(uint8_t key[7], int n);
 static uint32_t s_box(uint8_t block[6]);
@@ -142,9 +143,74 @@ int des_ecb(int argc, char *argv[])
     return des(argc, argv);
 }
 
+static char *get_password()
+{
+    char *password = strdup(getpass("Enter desencryption password:"));
+    char *confirmed_password = strdup(getpass("Verifying - enter desencryption password:"));
+
+    if (strcmp(password, confirmed_password) != 0)
+    {
+        fprintf(stderr, "Verify failure\nbad password read\n");
+        exit(EXIT_FAILURE);
+    }
+    free(confirmed_password);
+    return password;
+}
+
+static uint64_t verify_hex(const char *s)
+{
+    uint64_t ret;
+    uint8_t *ret_p = (uint8_t *)&ret, tmp;
+    char *endptr;
+
+    if (strlen(s) < 16)
+        fprintf(stderr, "hex string is too short, padding with zero bytes to length\n");
+    if (strlen(s) > 16)
+        fprintf(stderr, "hex string is too long, ignoring excess\n");
+
+    errno = 0;
+    ret = strtoul(s, &endptr, 16);
+    if (endptr == s)
+    {
+        fprintf(stderr, "non-hex digit\ninvalid hex value\n");
+        exit(1);
+    }
+    for (int i = 0; i < 4; ++i)
+    {
+        tmp = ret_p[i];
+        ret_p[i] = ret_p[7 - i];
+        ret_p[7 - i] = tmp;
+    }
+    return ret;
+}
+
+static uint64_t generate_key(char *password, uint64_t salt)
+{
+    uint64_t key;
+    char *tmp;
+    int n = strlen(password);
+
+    while (n < 8 && n % 8 != 0)
+    {
+        tmp = calloc(2*n + 1, 1);
+        memcpy(tmp, password, n);
+        memcpy(&tmp[n], password, n);
+        free(password);
+        password = tmp;
+    }
+
+    memcpy(&key, password, 8);
+    for (int i = 1; i < n / 8; ++i)
+        key ^= *((uint64_t *)&password[i * 8]);
+
+    return key ^ salt;
+}
+
 int des(int argc, char *argv[])
 {
-    int c;
+    char *msg, *e, *password = NULL;
+    uint64_t salt, key;
+    int c, n, base64_n;
 
     opterr = 0;
     while ((c = getopt(argc, argv, "adei:k:o:p:s:v:")) != EOF)
@@ -205,51 +271,91 @@ int des(int argc, char *argv[])
         }
     }
 
-    // assert(!is_cbc || vflag);
+    assert(!is_cbc || vflag);
 
-    // char *msg = iflag ? read_file(ivalue) : read_fd(STDIN_FILENO);
-    char msg[8] = { 1, 35, 69, 103, 137, 171, 205, 239 };
+    msg = iflag ? read_file_n(ivalue, &n) : read_fd_n(STDIN_FILENO, &n);
 
-    // uint8_t *key = kflag ? kvalue : generate_key();
-    uint8_t key[8] = { 19, 52, 87, 121, 155, 188, 223, 241 };
+    if (!dflag)
+        msg = pad_msg(msg, &n);
+    base64_n = (n*4 / 3) + 2;
 
-    // char *password = pflag ? pvalue : NULL;
+    if (!kflag)
+    {
+        password = pflag ? strdup(pvalue) : get_password();
+        salt = sflag ? verify_hex(svalue) : random();
+    }
+    key = kflag ? verify_hex(kvalue) : generate_key(password, salt);
 
-    // char *salt = sflag ? svalue : NULL;
+    printf("key = %llx\n", key);
 
-    // if (vflag)
-    //     initialisation_vector = strtol(vvalue, NULL, 16);
+    if (vflag)
+        initialisation_vector = verify_hex(vvalue);
 
-    uint8_t e[8] = {0};
+    e = malloc(base64_n);
+    memset(e, 0, base64_n);
 
-    // if (aflag && !dflag)
-    //     base64_encrypt(msg, msg);
+    if (aflag && dflag)
+    {
+        n = base64_decrypt(msg, msg);
+        n -= n % 8;
+    }
 
-    des_algorithm(8, msg, key, e);
+    des_algorithm(n, msg, key, (uint8_t *)e);
 
-    // if (aflag && dflag)
-    //     base64_decrypt(e, e);
+    if (dflag)
+    {
+        if (e[n - 1] < 1 || e[n - 1] > 8)
+        {
+            printf("bad padding [%c] %d\n", e[n - 1], e[n - 1]);
+            exit(1);
+        }
+        n -= e[n - 1];
+    }
 
-    // if (oflag)
-    //     write_file(ovalue, e);
+    if (aflag && !dflag)
+        n = base64_encrypt(n, e, e);
 
-    for (int i = 0; i < 1; printf("\n"), ++i)
-        for (int j = 0; j < 8; ++j)
-            printf("%.2x", e[8*i + j]);
+    if (aflag && !dflag && oflag)
+        write_file(ovalue, e);
+    else if (oflag)
+        write_buffer_to_file(ovalue, n, e);
 
-    uint8_t e2[8] = {0};
+    if (aflag && !dflag && !oflag)
+    {
+        for (int i = 0; e[i] != '\0'; ++i % 64 || printf("\n"))
+            printf("%c", e[i]);
+        printf("\n");
+    }
+    else if (!oflag)
+        for (int i = 0; i < n; ++i)
+            printf("%c", e[i]);
 
-    dflag = 1;
-    des_algorithm(8, (char *)e, key, e2);
+    // for (int i = 0; i < n / 8; printf("\n"), ++i)
+    //     for (int j = 0; j < 8; ++j)
+    //         printf("%.2x", e[8*i + j]);
 
-    for (int i = 0; i < 1; printf("\n"), ++i)
-        for (int j = 0; j < 8; ++j)
-            printf("%.2x", e2[8*i + j]);
-
+    free(msg), free(e), free(password);
     return 0;
 }
 
-static void des_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t e[n])
+static char *pad_msg(char *msg, int *msglen)
+{
+    char *padded;
+    int padding;
+
+    padding = 8 - *msglen%8;
+    padded = malloc(*msglen + padding + 1);
+
+    memcpy(padded, msg, *msglen);
+    memset(&padded[*msglen], padding, padding);
+    padded[*msglen + padding] = 0;
+
+    free(msg);
+    *msglen += padding;
+    return padded;
+}
+
+static void des_algorithm(int n, const char msg[n], uint64_t key, uint8_t e[n])
 {
     assert(n % 8 == 0);
 
@@ -257,9 +363,9 @@ static void des_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t e[n]
     uint8_t final_keys[16][6] = {0};
     uint8_t s_box_input[6];
     uint32_t left[17], right[17], s_box_output;
-    uint32_t *xored;
+    uint64_t *xored;
 
-    permute(8, key, 7, rotated_keys[0], key_permutation_table);
+    permute(8, (uint8_t *)&key, 7, rotated_keys[0], key_permutation_table);
     for (int i = 0; i < 16; ++i)
     {
         i && memcpy(rotated_keys[i], rotated_keys[i - 1], 7);
@@ -271,9 +377,9 @@ static void des_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t e[n]
 
     for (int i = 0; i < n / 8; ++i)
     {
-        xored = (uint32_t *)&msg[8 * i];
+        xored = (uint64_t *)&msg[8 * i];
         if (is_cbc && !dflag)
-            *xored ^= i ? *((uint32_t *)&e[8 * (i - 1)]) : initialisation_vector;
+            *xored ^= i ? *((uint64_t *)&e[8 * (i - 1)]) : initialisation_vector;
         
         permute(8, (uint8_t *)xored, 8, &e[8 * i], initial_block_permutation_table);
 
@@ -285,8 +391,8 @@ static void des_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t e[n]
 
             permute(4, (uint8_t *)&right[j], 6, s_box_input, e_permutation_table);
 
-            for (int i = 0; i < 6; ++i)
-                s_box_input[i] ^= final_keys[dflag ? 15 - j : j][i];
+            for (int k = 0; k < 6; ++k)
+                s_box_input[k] ^= final_keys[dflag ? 15 - j : j][k];
 
             s_box_output = s_box(s_box_input);
             permute(4, (uint8_t *)&s_box_output, 4, (uint8_t *)&s_box_output, s_box_permutation_table);
@@ -298,9 +404,9 @@ static void des_algorithm(int n, const char msg[n], uint8_t key[8], uint8_t e[n]
         memcpy(&e[8*i + 4], &left[16], 4);
         permute(8, &e[8 * i], 8, &e[8 * i], final_block_permutation_table);
 
-        xored = (uint32_t *)&e[8 * i];
+        xored = (uint64_t *)&e[8 * i];
         if (is_cbc && dflag)
-            *xored ^= i ? *((uint32_t *)&msg[8 * (i - 1)]) : initialisation_vector;
+            *xored ^= i ? *((uint64_t *)&msg[8 * (i - 1)]) : initialisation_vector;
     }
 }
 
