@@ -1,4 +1,7 @@
 SRCS =	main.c \
+		standards/genrsa.c \
+		standards/rsa.c \
+		standards/rsautl.c \
 		hashes/md5.c \
 		hashes/sha256.c \
 		ciphers/base64.c \

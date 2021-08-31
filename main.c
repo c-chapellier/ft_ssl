@@ -47,9 +47,9 @@ int main(int argc, char *argv[])
         if (i < n_standards && strcmp(argv[1], standards[i]) == 0)
             return mains[i](argc - 1, &argv[1]);
         if (i < n_hashes && strcmp(argv[1], hashes[i]) == 0)
-            return mains[n_hashes + i](argc - 1, &argv[1]);
+            return mains[n_standards + i](argc - 1, &argv[1]);
         if (i < n_ciphers && strcmp(argv[1], ciphers[i]) == 0)
-            return mains[n_hashes + n_ciphers + i](argc - 1, &argv[1]);
+            return mains[n_standards + n_hashes + i](argc - 1, &argv[1]);
     }
 
     printf("ft_ssl: Error: '%s' is an invalid command.\n\n", argv[1]);
