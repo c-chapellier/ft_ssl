@@ -45,7 +45,7 @@ uint32_t left_rotate_32(uint32_t value, unsigned int count);
 uint32_t big_to_small_endian_32(uint32_t n);
 uint64_t small_to_big_endian_64(uint64_t n);
 
-void    adition(uint8_t *nb1, uint8_t *nb2, uint32_t size);
+uint8_t     *addition(uint8_t *nb1, uint8_t *nb2, uint32_t size);
 
 char *read_file(const char *filename);
 char *read_file_n(const char *filename, int *bytes_read);

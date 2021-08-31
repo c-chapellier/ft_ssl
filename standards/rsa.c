@@ -98,9 +98,9 @@ int rsa(int argc, char *argv[])
     print_opt();
     check_error();
 
-    uint8_t nb1[4] = {0, 0, 0, 255};
-    uint8_t nb2[4] = {0, 0, 0, 255};
-    adition(nb1, nb2, 4);
+    uint8_t nb1[4] = {255, 255, 255, 255};
+    uint8_t nb2[4] = {255, 255, 255, 255};
+    addition(nb1, nb2, 4);
     return 0;
 }
 

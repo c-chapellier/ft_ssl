@@ -33,45 +33,44 @@ static bool is_zero(uint8_t *nb1, uint32_t size){
     return true;
 }
 
-void    adition(uint8_t *nb1, uint8_t *nb2, uint32_t size)
+uint8_t     *addition(uint8_t *nb1, uint8_t *nb2, uint32_t size)
 {
-    uint8_t x[size];
-    uint8_t y[size];
-    memcpy(x, nb1, size);
-    memcpy(y, nb2, size);
-    while (is_zero(y, size) == false)
+    uint32_t double_size = size * 2;
+    uint8_t x[double_size];
+    uint8_t y[double_size];
+    memset(x, 0, double_size);
+    memcpy(&x[size], nb1, size);
+    memset(y, 0, double_size);
+    memcpy(&y[size], nb2, size);
+    while (is_zero(y, double_size) == false)
     {
         // carry now contains common
         // set bits of x and y
-        uint8_t carry[size];
-        memset(carry, 0, size);
-        for(uint32_t i = 0; i < size; ++i){
+        uint8_t carry[double_size];
+        memset(carry, 0, double_size);
+        for(uint32_t i = 0; i < double_size; ++i){
             carry[i] = x[i] & y[i];
         }
  
         // Sum of bits of x and y where at
         // least one of the bits is not set
-        for(uint32_t i = 0; i < size; ++i){
+        for(uint32_t i = 0; i < double_size; ++i){
             x[i] = x[i] ^ y[i];
         }
  
         // Carry is shifted by one so that adding
         // it to x gives the required sum
         uint8_t rest = 0;
-        for(int i = (int)(size - 1); i >= 0; --i){
+        for(int i = (int)((double_size) - 1); i >= 0; --i){
             y[i] = carry[i] << 1 | rest;
             rest = 0;
             rest |= carry[i] >> 7;
         }
     }
-    for(uint32_t i = 0; i < size / 2; ++i) {
-        uint8_t tmp = x[size - 1 - i];
-        x[size - 1 - i] = x[i];
-        x[i] = tmp;
-    }
-    PRINT_UINT32(x);
+    for(uint32_t i = 0; i < double_size; ++i)
+        printf("%02x ", x[i]);
     puts("");
-    PRINT_UINT32(((uint32_t*)x));
-    puts("");
-    printf("%d\n", *((uint32_t*)x));
+    uint8_t *res = malloc(double_size);
+    memcpy(res, x, double_size);
+    return res;
 }
