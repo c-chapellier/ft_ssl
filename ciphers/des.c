@@ -286,7 +286,7 @@ int des(int argc, char *argv[])
     }
     key = kflag ? verify_hex(kvalue) : generate_key(password, salt);
 
-    printf("key = %llx\n", key);
+    // printf("key = %llx\n", key);
 
     if (vflag)
         initialisation_vector = verify_hex(vvalue);
