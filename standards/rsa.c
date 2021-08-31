@@ -97,23 +97,27 @@ int rsa(int argc, char *argv[])
 
     print_opt();
     check_error();
+
+    uint8_t nb1[4] = {0, 0, 0, 255};
+    uint8_t nb2[4] = {0, 0, 0, 255};
+    adition(nb1, nb2, 4);
     return 0;
 }
 
 static void print_opt(){
-    printf("inform  : %s\n", inform);
-    printf("outform : %s\n", outform);
-    printf("in      : %s\n", in);
-    printf("passin  : %s\n", passin);
-    printf("out     : %s\n", out);
-    printf("passout : %s\n", passout);
-    printf("des     : %d\n", p_des);
-    printf("text    : %d\n", p_text);
-    printf("noout   : %d\n", p_noout);
-    printf("modulus : %d\n", p_modulus);
-    printf("check   : %d\n", p_check);
-    printf("pubin   : %d\n", p_pubin);
-    printf("pubout  : %d\n", p_pubout);
+    // printf("inform  : %s\n", inform);
+    // printf("outform : %s\n", outform);
+    // printf("in      : %s\n", in);
+    // printf("passin  : %s\n", passin);
+    // printf("out     : %s\n", out);
+    // printf("passout : %s\n", passout);
+    // printf("des     : %d\n", p_des);
+    // printf("text    : %d\n", p_text);
+    // printf("noout   : %d\n", p_noout);
+    // printf("modulus : %d\n", p_modulus);
+    // printf("check   : %d\n", p_check);
+    // printf("pubin   : %d\n", p_pubin);
+    // printf("pubout  : %d\n", p_pubout);
 }
 
 static void print_usage(){
