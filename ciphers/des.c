@@ -282,7 +282,7 @@ int des(int argc, char *argv[])
     if (!kflag)
     {
         password = pflag ? strdup(pvalue) : get_password();
-        salt = sflag ? verify_hex(svalue) : random();
+        salt = sflag ? verify_hex(svalue) : random() << 32 | random(); 
     }
     key = kflag ? verify_hex(kvalue) : generate_key(password, salt);
 

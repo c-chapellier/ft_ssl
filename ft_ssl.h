@@ -23,6 +23,10 @@
 #define PRINT_UINT16(n) print_uint8(&((uint8_t *)n)[0]), printf(" "), print_uint8(&((uint8_t *)n)[1])
 #define PRINT_UINT8(n) print_uint8(&((uint8_t *)n)[0])
 
+int genrsa(int argc, char *argv[]);
+int rsa(int argc, char *argv[]);
+int rsautl(int argc, char *argv[]);
+
 int md5(int argc, char *argv[]);
 void md5_hash(char *msg, uint8_t digest[MD5_DIGEST_SIZE]);
 int sha256(int argc, char *argv[]);

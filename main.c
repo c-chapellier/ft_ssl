@@ -1,5 +1,11 @@
 #include "ft_ssl.h"
 
+char *standards[] = {
+    "genrsa",
+    "rsa",
+    "rsautl",
+};
+
 char *hashes[] = {
     "md5",
     "sha256",
@@ -13,6 +19,9 @@ char *ciphers[] = {
 };
 
 int (*mains[])(int argc, char *argv[]) = {
+    &genrsa,
+    &rsa,
+    &rsautl,
     &md5,
     &sha256,
     &base64,
@@ -29,15 +38,25 @@ int main(int argc, char *argv[])
         return (EXIT_FAILURE);
     }
 
+    int n_standards = sizeof standards / sizeof standards[0];
     int n_hashes = sizeof hashes / sizeof hashes[0];
     int n_ciphers = sizeof ciphers / sizeof ciphers[0];
 
-    for (int i = 0; i < n_hashes + n_ciphers; ++i)
-        if (strcmp(argv[1], i < n_hashes ? hashes[i] : ciphers[i - n_hashes]) == 0)
+    for (int i = 0; i < n_standards + n_hashes + n_ciphers; ++i)
+    {
+        if (i < n_standards && strcmp(argv[1], standards[i]) == 0)
             return mains[i](argc - 1, &argv[1]);
+        if (i < n_hashes && strcmp(argv[1], hashes[i]) == 0)
+            return mains[n_hashes + i](argc - 1, &argv[1]);
+        if (i < n_ciphers && strcmp(argv[1], ciphers[i]) == 0)
+            return mains[n_hashes + n_ciphers + i](argc - 1, &argv[1]);
+    }
 
     printf("ft_ssl: Error: '%s' is an invalid command.\n\n", argv[1]);
-    printf("Standard commands:\n\n");
+    printf("Standard commands:\n");
+    for (int i = 0; i < n_standards; ++i)
+        printf("%s\n", standards[i]);
+    printf("\n");
     printf("Message Digest commands:\n");
     for (int i = 0; i < n_hashes; ++i)
         printf("%s\n", hashes[i]);
