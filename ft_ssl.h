@@ -11,6 +11,7 @@
 #include <limits.h>
 #include <assert.h>
 #include <errno.h>
+#include <getopt.h>
 
 #define MD5_DIGEST_SIZE 16
 
