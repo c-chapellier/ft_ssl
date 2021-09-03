@@ -14,7 +14,7 @@ OBJS = ${SRCS:.c=.o}
 
 NAME = ft_ssl
 
-CFLAGS		= -Wall -Wextra -Werror
+# CFLAGS		= -Wall -Wextra -Werror
 
 all :		${NAME}
 

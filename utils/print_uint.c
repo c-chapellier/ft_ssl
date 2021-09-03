@@ -1,6 +1,6 @@
 #include "../ft_ssl.h"
 
-static int pow(int b, int e)
+static int powint(int b, int e)
 {
     int ret = b;
     if (e == 0)
@@ -20,10 +20,10 @@ void print_uint8(uint8_t *n)
     for (int i = 0; i < 8; ++i)
     {
         // printf("n = %u [%u]\n", n, pow(2, 7 - i));
-        if (t / pow(2, 7 - i) >= 1) // power for integers -> https://stackoverflow.com/questions/29787310/does-pow-work-for-int-data-type-in-c
+        if (t / powint(2, 7 - i) >= 1) // power for integers -> https://stackoverflow.com/questions/29787310/does-pow-work-for-int-data-type-in-c
         {
             putchar('1');
-            t -= pow(2, 7 - i);
+            t -= powint(2, 7 - i);
         }
         else
         {

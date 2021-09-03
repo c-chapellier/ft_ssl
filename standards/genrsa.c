@@ -1,7 +1,17 @@
 #include "../ft_ssl.h"
 
+#define COMPOSITE 0
+#define PROBABLY_PRIME 1
+
 static int pflag = 0, qflag = 0, rflag = 0, sflag = 0;
 static char *svalue = NULL;
+
+static uint64_t modpow(__uint128_t base, uint64_t exp, uint64_t modulus);
+static uint64_t randu64();
+static uint64_t randu64_range(uint64_t min, uint64_t max);
+static int miller_rabin_primalty_test(uint64_t n, int k);
+static uint64_t generate_prime_candidate();
+static uint64_t generate_prime_number();
 
 int genrsa(int argc, char *argv[])
 {
@@ -37,5 +47,81 @@ int genrsa(int argc, char *argv[])
         }
     }
 
+    printf("prime = %llu\n", generate_prime_number());
+
     return 0;
+}
+
+static uint64_t generate_prime_number()
+{
+    uint64_t p = 4;
+
+    while (miller_rabin_primalty_test(p, 128) != PROBABLY_PRIME)
+        p = generate_prime_candidate();
+    return p;
+}
+
+static uint64_t generate_prime_candidate()
+{
+    return randu64() | ((uint64_t)1 << (64 - 1)) | 1;
+}
+
+static int miller_rabin_primalty_test(uint64_t n, int k)
+{
+    if (n == 2 || n == 3)
+        return PROBABLY_PRIME;
+    if (n <= 1 || n % 2 == 0)
+        return COMPOSITE;
+
+    uint64_t x, s = 0, r = n - 1;
+    int j;
+
+    while ((r & 1) == 0)
+        s += 1, r /= 2;
+    
+    for (int i = 0; i < k; ++i)
+    {
+        x = modpow(randu64_range(2, n - 1), r, n);
+
+        if (x != 1 && x != n - 1)
+        {
+            j = 1;
+            while (j < s && x != n - 1)
+            {
+                x = modpow(x, 2, n);
+                if (x == 1)
+                    return COMPOSITE;
+                ++j;
+            }
+            if (x != n - 1)
+                return COMPOSITE;
+        }
+    }
+    return PROBABLY_PRIME;
+}
+
+static uint64_t randu64()
+{
+    return (uint64_t)random() << 32 | random();
+}
+
+static uint64_t randu64_range(uint64_t min, uint64_t max)
+{
+    return min + randu64() % (max - 1 - min);
+}
+
+static uint64_t modpow(__uint128_t base, uint64_t exp, uint64_t modulus)
+{
+    __uint128_t result = 1;
+
+    base %= modulus;
+    while (exp > 0)
+    {
+        if (exp & 1)
+            result = (result * base) % modulus;
+        assert(base < (base * base));
+        base = (base * base) % modulus;
+        exp >>= 1;
+    }
+    return result;
 }
