@@ -97,32 +97,6 @@ int rsa(int argc, char *argv[])
 
     print_opt();
     check_error();
-    for (int k = 253; k < 256; ++k){
-        printf("[%d]\n", k);
-        uint8_t nb1[4] = {255, 255, 255, 255};
-        uint8_t nb2[4] = {255, 128, 0, 255};
-        //uint32_t b = 255;
-        uint32_t new_size = 0;
-        uint8_t *res;
-        // res = addition(nb1, nb2, 4, &new_size);
-        // printf("new size: %d\n", new_size);
-        // printf("addition: ");
-        // for(uint32_t i = 0; i < new_size; ++i)
-        //     printf("%02x", res[i]);
-        // puts("");
-        res = substraction(nb1, nb2, 4, &new_size);
-        printf("new size: %d\n", new_size);
-        printf("substraction: ");
-        for(uint32_t i = 0; i < new_size; ++i)
-            printf("%02x", res[i]);
-        puts("");
-        // res = multiplication(nb1, nb2, 4,  &new_size);
-        // printf("new size: %d\n", new_size);
-        // printf("multiplication: ");
-        // for(uint32_t i = 0; i < new_size; ++i)
-        //     printf("%02x", res[i]);
-        // puts("");
-    }
     
     return 0;
 }

@@ -3,6 +3,8 @@
 #define COMPOSITE 0
 #define PROBABLY_PRIME 1
 
+int     fd;
+
 static int pflag = 0, qflag = 0, rflag = 0, sflag = 0;
 static char *svalue = NULL;
 
@@ -12,6 +14,8 @@ static uint64_t randu64_range(uint64_t min, uint64_t max);
 static int miller_rabin_primalty_test(uint64_t n, int k);
 static uint64_t generate_prime_candidate();
 static uint64_t generate_prime_number();
+
+static uint8_t *get_res(uint64_t nb1, uint64_t nb2);
 
 int genrsa(int argc, char *argv[])
 {
@@ -46,9 +50,14 @@ int genrsa(int argc, char *argv[])
             return 1;
         }
     }
+    fd = open("/dev/random", O_RDONLY);
+    
+    uint64_t nb1 = generate_prime_number();
+    uint64_t nb2 = generate_prime_number();
+    printf("prime = %llu %llx\nprime = %llu %llx\n", nb1, nb1, nb2, nb2);
+    close(fd);
 
-    printf("prime = %llu\n", generate_prime_number());
-
+    get_res(nb1, nb2);
     return 0;
 }
 
@@ -102,7 +111,13 @@ static int miller_rabin_primalty_test(uint64_t n, int k)
 
 static uint64_t randu64()
 {
-    return (uint64_t)random() << 32 | random();
+    int     size = 8;
+    char    buff[size];
+    read(fd, buff, 8);
+    uint64_t *res = (uint64_t*)buff;
+    printf("%d: %llu\n", fd, *res);
+    return *res;
+    //return (uint64_t)random() << 32 | random();
 }
 
 static uint64_t randu64_range(uint64_t min, uint64_t max)
@@ -124,4 +139,27 @@ static uint64_t modpow(__uint128_t base, uint64_t exp, uint64_t modulus)
         exp >>= 1;
     }
     return result;
+}
+
+static uint8_t *get_res(uint64_t nb1, uint64_t nb2)
+{
+    uint32_t new_size = 0;
+    uint8_t nb1t[8];
+    uint8_t nb2t[8];
+    memcpy(nb1t, &nb1, 8);
+    memcpy(nb2t, &nb2, 8);
+
+    for (int i = 0; i < 4; ++i) {
+        uint8_t tmp = nb1t[i];
+        nb1t[i] = nb1t[8 - 1 - i];
+        nb1t[8 - 1 - i] = tmp;
+
+        tmp = nb2t[i];
+        nb2t[i] = nb2t[8 - 1 - i];
+        nb2t[8 - 1 - i] = tmp;
+    }
+
+    uint8_t *res = multiplication(nb1t, nb2t, 8, &new_size);
+    double_dabble(res, new_size, &new_size);
+    return res;
 }
